@@ -10,11 +10,26 @@ import (
 
 type BranchRestrictions struct {
 	c *Client
+}
 
-	ID      int
-	Pattern string
-	Kind    string
-	Value   *int
+type BranchRestrictionsRes struct {
+	Page          int
+	Pagelen       int
+	MaxDepth      int
+	Size          int
+	Next          string
+	BRestrictions []BranchRestriction
+}
+
+type BranchRestriction struct {
+	Kind            string
+	Pattern         string
+	BranchMatchKind string
+	Value           int
+	Id              int
+	Links           map[string]interface{}
+	Users           map[string]interface{}
+	Groups          map[string]interface{}
 }
 
 func (b *BranchRestrictions) Gets(bo *BranchRestrictionsOptions) (interface{}, error) {
@@ -22,7 +37,8 @@ func (b *BranchRestrictions) Gets(bo *BranchRestrictionsOptions) (interface{}, e
 	return b.c.execute("GET", urlStr, "")
 }
 
-func (b *BranchRestrictions) Create(bo *BranchRestrictionsOptions) (*BranchRestrictions, error) {
+func (b *BranchRestrictions) Create(bo *BranchRestrictionsOptions) (*BranchRestrictionsRes, error) {
+	// TODO update function with update to decode functions
 	data := b.buildBranchRestrictionsBody(bo)
 	urlStr := b.c.requestUrl("/repositories/%s/%s/branch-restrictions", bo.Owner, bo.RepoSlug)
 	response, err := b.c.execute("POST", urlStr, data)
@@ -30,10 +46,12 @@ func (b *BranchRestrictions) Create(bo *BranchRestrictionsOptions) (*BranchRestr
 		return nil, err
 	}
 
-	return decodeBranchRestriction(response)
+	return decodeBranchRestriction(response) // TODO fix/update decodeBranchRestrictions response
 }
 
-func (b *BranchRestrictions) Get(bo *BranchRestrictionsOptions) (*BranchRestrictions, error) {
+func (b *BranchRestrictions) Get(bo *BranchRestrictionsOptions) (*BranchRestrictionsRes, error) {
+	// TODO update function with query parameter handling and update handling of updated decode
+	// function
 	urlStr := b.c.requestUrl("/repositories/%s/%s/branch-restrictions/%s", bo.Owner, bo.RepoSlug, bo.ID)
 	response, err := b.c.execute("GET", urlStr, "")
 	if err != nil {
@@ -43,7 +61,8 @@ func (b *BranchRestrictions) Get(bo *BranchRestrictionsOptions) (*BranchRestrict
 	return decodeBranchRestriction(response)
 }
 
-func (b *BranchRestrictions) Update(bo *BranchRestrictionsOptions) (interface{}, error) {
+func (b *BranchRestrictions) Update(bo *BranchRestrictionsOptions) (BranchRestrictionsRes, error) {
+	// TODO update function with update to decode functions
 	data := b.buildBranchRestrictionsBody(bo)
 	urlStr := b.c.requestUrl("/repositories/%s/%s/branch-restrictions/%s", bo.Owner, bo.RepoSlug, bo.ID)
 	response, err := b.c.execute("PUT", urlStr, data)
@@ -150,17 +169,55 @@ func (b *BranchRestrictions) buildBranchRestrictionsBody(bo *BranchRestrictionsO
 	return string(data)
 }
 
-func decodeBranchRestriction(branchResponse interface{}) (*BranchRestrictions, error) {
-	branchMap := branchResponse.(map[string]interface{})
-
-	if branchMap["type"] == "error" {
-		return nil, DecodeError(branchMap)
-	}
-
-	var branchRestriction = new(BranchRestrictions)
-	err := mapstructure.Decode(branchMap, branchRestriction)
+func decodeBranchRestriction(branchRestrictionResStr string) (*BranchRestrictionsRes, error) {
+	var branchRestrictResMap map[string]interface{}
+	err := json.Unmarshal([]byte(branchRestrictionResStr), &branchRestrictResMap)
 	if err != nil {
 		return nil, err
 	}
-	return branchRestriction, nil
+
+	branchRestrictionsArray := branchRestrictResMap["values"].([]interface{})
+	var branchRestrictionsSlice []BranchRestriction
+	for _, BranchRestrictionEntry := range branchRestrictionsArray {
+		var br BranchRestriction
+		err = mapstructure.Decode(BranchRestrictionEntry, &br)
+		if err == nil {
+			branchRestrictionsSlice = append(branchRestrictionsSlice, br)
+		}
+	}
+
+	page, ok := branchRestrictResMap["page"].(float64)
+	if !ok {
+		page = 0
+	}
+
+	pagelen, ok := branchRestrictResMap["pagelen"].(float64)
+	if !ok {
+		pagelen = 0
+	}
+
+	max_depth, ok := branchRestrictResMap["max_depth"].(float64)
+	if !ok {
+		max_depth = 0
+	}
+
+	size, ok := branchRestrictResMap["size"].(float64)
+	if !ok {
+		size = 0
+	}
+
+	next, ok := branchRestrictResMap["next"].(string)
+	if !ok {
+		next = ""
+	}
+
+	branchRestrictions := BranchRestrictionsRes{
+		Page:          int(page),
+		Pagelen:       int(pagelen),
+		MaxDepth:      int(max_depth),
+		Size:          int(size),
+		Next:          next,
+		BRestrictions: branchRestrictionsSlice,
+	}
+	return &branchRestrictions, nil
 }
