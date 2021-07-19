@@ -2,6 +2,7 @@ package bitbucket
 
 import (
 	"encoding/json"
+	"io/ioutil"
 	"os"
 
 	"github.com/k0kubun/pp"
@@ -32,9 +33,19 @@ type BranchRestriction struct {
 	Groups          map[string]interface{}
 }
 
-func (b *BranchRestrictions) Gets(bo *BranchRestrictionsOptions) (interface{}, error) {
+func (b *BranchRestrictions) Gets(bo *BranchRestrictionsOptions) (*BranchRestrictionsRes, error) {
+
 	urlStr := b.c.requestUrl("/repositories/%s/%s/branch-restrictions", bo.Owner, bo.RepoSlug)
-	return b.c.execute("GET", urlStr, "")
+	response, err := b.c.executeRaw("GET", urlStr, "")
+	if err != nil {
+		return nil, err
+	}
+	bodyBytes, err := ioutil.ReadAll(response)
+	if err != nil {
+		return nil, err
+	}
+	bodyString := string(bodyBytes)
+	return decodeBranchRestriction(bodyString)
 }
 
 func (b *BranchRestrictions) Create(bo *BranchRestrictionsOptions) (*BranchRestrictionsRes, error) {
