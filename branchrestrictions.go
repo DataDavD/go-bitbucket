@@ -13,89 +13,12 @@ type BranchRestrictions struct {
 	c *Client
 }
 
-type BranchRestrictionsRes struct {
-	Page          int
-	Pagelen       int
-	MaxDepth      int
-	Size          int
-	Next          string
-	BRestrictions []BranchRestriction
-}
-
-type BranchRestriction struct {
-	Kind            string
-	Pattern         string
-	BranchMatchKind string
-	Value           int
-	Id              int
-	Links           map[string]interface{}
-	Users           map[string]interface{}
-	Groups          map[string]interface{}
-}
-
-func (b *BranchRestrictions) Gets(bo *BranchRestrictionsOptions) (*BranchRestrictionsRes, error) {
-
-	urlStr := b.c.requestUrl("/repositories/%s/%s/branch-restrictions", bo.Owner, bo.RepoSlug)
-	response, err := b.c.executeRaw("GET", urlStr, "")
-	if err != nil {
-		return nil, err
-	}
-	bodyBytes, err := ioutil.ReadAll(response)
-	if err != nil {
-		return nil, err
-	}
-	bodyString := string(bodyBytes)
-	return decodeBranchRestriction(bodyString)
-}
-
-func (b *BranchRestrictions) Create(bo *BranchRestrictionsOptions) (*BranchRestrictionsRes, error) {
-	data := b.buildBranchRestrictionsBody(bo)
-	urlStr := b.c.requestUrl("/repositories/%s/%s/branch-restrictions", bo.Owner, bo.RepoSlug)
-	response, err := b.c.executeRaw("POST", urlStr, data)
-	if err != nil {
-		return nil, err
-	}
-	bodyBytes, err := ioutil.ReadAll(response)
-	if err != nil {
-		return nil, err
-	}
-	bodyString := string(bodyBytes)
-	return decodeBranchRestriction(bodyString)
-}
-
-func (b *BranchRestrictions) Get(bo *BranchRestrictionsOptions) (*BranchRestrictionsRes, error) {
-	// TODO update function with query parameter handling and update handling of updated decode
-	// function
-	urlStr := b.c.requestUrl("/repositories/%s/%s/branch-restrictions/%s", bo.Owner, bo.RepoSlug, bo.ID)
-	response, err := b.c.execute("GET", urlStr, "")
-	if err != nil {
-		return nil, err
-	}
-
-	return decodeBranchRestriction(response)
-}
-
-func (b *BranchRestrictions) Update(bo *BranchRestrictionsOptions) (BranchRestrictionsRes, error) {
-	// TODO update function with update to decode functions
-	data := b.buildBranchRestrictionsBody(bo)
-	urlStr := b.c.requestUrl("/repositories/%s/%s/branch-restrictions/%s", bo.Owner, bo.RepoSlug, bo.ID)
-	response, err := b.c.execute("PUT", urlStr, data)
-	if err != nil {
-		return nil, err
-	}
-
-	return decodeBranchRestriction(response)
-}
-
-func (b *BranchRestrictions) Delete(bo *BranchRestrictionsOptions) (interface{}, error) {
-	urlStr := b.c.requestUrl("/repositories/%s/%s/branch-restrictions/%s", bo.Owner, bo.RepoSlug, bo.ID)
-	return b.c.execute("DELETE", urlStr, "")
-}
-
-type branchRestrictionsBody struct {
-	Kind    string `json:"kind"`
-	Pattern string `json:"pattern"`
-	Links   struct {
+type BranchRestrictionsBody struct {
+	Kind            string `json:"kind"`
+	BranchMatchKind string `json:"branch_match_kind"`
+	BranchType      string `json:"branch_type"`
+	Pattern         string `json:"pattern"`
+	Links           struct {
 		Self struct {
 			Href string `json:"href"`
 		} `json:"self"`
@@ -104,6 +27,7 @@ type branchRestrictionsBody struct {
 	ID     int                           `json:"id"`
 	Users  []branchRestrictionsBodyUser  `json:"users"`
 	Groups []branchRestrictionsBodyGroup `json:"groups"`
+	Type   string                        `json:"type"`
 }
 
 type branchRestrictionsBodyGroup struct {
@@ -149,7 +73,80 @@ type branchRestrictionsBodyUser struct {
 	} `json:"links"`
 }
 
-func (b *BranchRestrictions) buildBranchRestrictionsBody(bo *BranchRestrictionsOptions) string {
+type BranchRestrictionsRes struct {
+	Page          int
+	Pagelen       int
+	MaxDepth      int
+	Size          int
+	Next          string
+	BRestrictions []BranchRestrictionsBody
+}
+
+func (b *BranchRestrictions) Gets(bo *BranchRestrictionsOptions) (*BranchRestrictionsRes, error) {
+
+	urlStr := b.c.requestUrl("/repositories/%s/%s/branch-restrictions", bo.Owner, bo.RepoSlug)
+	response, err := b.c.executeRaw("GET", urlStr, "")
+	if err != nil {
+		return nil, err
+	}
+	bodyBytes, err := ioutil.ReadAll(response)
+	if err != nil {
+		return nil, err
+	}
+	bodyString := string(bodyBytes)
+	return decodeBranchRestrictions(bodyString)
+}
+
+func (b *BranchRestrictions) Create(bo *BranchRestrictionsOptions) (*BranchRestrictionsBody, error) {
+	data := b.BuildBranchRestrictionsBody(bo)
+	urlStr := b.c.requestUrl("/repositories/%s/%s/branch-restrictions", bo.Owner, bo.RepoSlug)
+	response, err := b.c.executeRaw("POST", urlStr, data)
+	if err != nil {
+		return nil, err
+	}
+	bodyBytes, err := ioutil.ReadAll(response)
+	if err != nil {
+		return nil, err
+	}
+	bodyString := string(bodyBytes)
+	return decodeBranchRestriction(bodyString)
+}
+
+func (b *BranchRestrictions) Get(bo *BranchRestrictionsOptions) (*BranchRestrictionsBody, error) {
+	urlStr := b.c.requestUrl("/repositories/%s/%s/branch-restrictions/%s", bo.Owner, bo.RepoSlug, bo.ID)
+	response, err := b.c.executeRaw("GET", urlStr, "")
+	if err != nil {
+		return nil, err
+	}
+	bodyBytes, err := ioutil.ReadAll(response)
+	if err != nil {
+		return nil, err
+	}
+	bodyString := string(bodyBytes)
+	return decodeBranchRestriction(bodyString)
+}
+
+func (b *BranchRestrictions) Update(bo *BranchRestrictionsOptions) (*BranchRestrictionsBody, error) {
+	data := b.BuildBranchRestrictionsBody(bo)
+	urlStr := b.c.requestUrl("/repositories/%s/%s/branch-restrictions/%s", bo.Owner, bo.RepoSlug, bo.ID)
+	response, err := b.c.executeRaw("PUT", urlStr, data)
+	if err != nil {
+		return nil, err
+	}
+	bodyBytes, err := ioutil.ReadAll(response)
+	if err != nil {
+		return nil, err
+	}
+	bodyString := string(bodyBytes)
+	return decodeBranchRestriction(bodyString)
+}
+
+func (b *BranchRestrictions) Delete(bo *BranchRestrictionsOptions) (interface{}, error) {
+	urlStr := b.c.requestUrl("/repositories/%s/%s/branch-restrictions/%s", bo.Owner, bo.RepoSlug, bo.ID)
+	return b.c.executeRaw("DELETE", urlStr, "")
+}
+
+func (b *BranchRestrictions) BuildBranchRestrictionsBody(bo *BranchRestrictionsOptions) string {
 
 	var users []branchRestrictionsBodyUser
 	var groups []branchRestrictionsBodyGroup
@@ -166,7 +163,7 @@ func (b *BranchRestrictions) buildBranchRestrictionsBody(bo *BranchRestrictionsO
 		groups = append(groups, group)
 	}
 
-	body := branchRestrictionsBody{
+	body := BranchRestrictionsBody{
 		Kind:    bo.Kind,
 		Pattern: bo.Pattern,
 		Users:   users,
@@ -183,7 +180,7 @@ func (b *BranchRestrictions) buildBranchRestrictionsBody(bo *BranchRestrictionsO
 	return string(data)
 }
 
-func decodeBranchRestriction(branchRestrictionResStr string) (*BranchRestrictionsRes, error) {
+func decodeBranchRestrictions(branchRestrictionResStr string) (*BranchRestrictionsRes, error) {
 	var branchRestrictResMap map[string]interface{}
 	err := json.Unmarshal([]byte(branchRestrictionResStr), &branchRestrictResMap)
 	if err != nil {
@@ -191,9 +188,9 @@ func decodeBranchRestriction(branchRestrictionResStr string) (*BranchRestriction
 	}
 
 	branchRestrictionsArray := branchRestrictResMap["values"].([]interface{})
-	var branchRestrictionsSlice []BranchRestriction
+	var branchRestrictionsSlice []BranchRestrictionsBody
 	for _, BranchRestrictionEntry := range branchRestrictionsArray {
-		var br BranchRestriction
+		var br BranchRestrictionsBody
 		err = mapstructure.Decode(BranchRestrictionEntry, &br)
 		if err == nil {
 			branchRestrictionsSlice = append(branchRestrictionsSlice, br)
@@ -234,4 +231,21 @@ func decodeBranchRestriction(branchRestrictionResStr string) (*BranchRestriction
 		BRestrictions: branchRestrictionsSlice,
 	}
 	return &branchRestrictions, nil
+}
+
+func decodeBranchRestriction(branchRestrictionResStr string) (*BranchRestrictionsBody, error) {
+	var brResMap map[string]interface{}
+	var br BranchRestrictionsBody
+
+	err := json.Unmarshal([]byte(branchRestrictionResStr), &brResMap)
+	if err != nil {
+		return nil, err
+	}
+
+	err = mapstructure.Decode(brResMap, &br)
+	if err != nil {
+		return nil, err
+	}
+
+	return &br, nil
 }
