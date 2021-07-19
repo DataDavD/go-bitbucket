@@ -49,15 +49,18 @@ func (b *BranchRestrictions) Gets(bo *BranchRestrictionsOptions) (*BranchRestric
 }
 
 func (b *BranchRestrictions) Create(bo *BranchRestrictionsOptions) (*BranchRestrictionsRes, error) {
-	// TODO update function with update to decode functions
 	data := b.buildBranchRestrictionsBody(bo)
 	urlStr := b.c.requestUrl("/repositories/%s/%s/branch-restrictions", bo.Owner, bo.RepoSlug)
-	response, err := b.c.execute("POST", urlStr, data)
+	response, err := b.c.executeRaw("POST", urlStr, data)
 	if err != nil {
 		return nil, err
 	}
-
-	return decodeBranchRestriction(response) // TODO fix/update decodeBranchRestrictions response
+	bodyBytes, err := ioutil.ReadAll(response)
+	if err != nil {
+		return nil, err
+	}
+	bodyString := string(bodyBytes)
+	return decodeBranchRestriction(bodyString)
 }
 
 func (b *BranchRestrictions) Get(bo *BranchRestrictionsOptions) (*BranchRestrictionsRes, error) {
