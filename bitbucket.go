@@ -318,16 +318,18 @@ type CommitStatusOptions struct {
 }
 
 type BranchRestrictionsOptions struct {
-	Owner    string            `json:"owner"`
-	RepoSlug string            `json:"repo_slug"`
-	ID       string            `json:"id"`
-	Groups   map[string]string `json:"groups"`
-	Pattern  string            `json:"pattern"`
-	Users    []string          `json:"users"`
-	Kind     string            `json:"kind"`
-	FullSlug string            `json:"full_slug"`
-	Name     string            `json:"name"`
-	Value    interface{}       `json:"value"`
+	Owner           string                 `json:"owner"`
+	RepoSlug        string                 `json:"repo_slug"`
+	ID              int                    `json:"id"`
+	Groups          map[string]interface{} `json:"groups"`
+	Pattern         string                 `json:"pattern"`
+	Users           map[string]interface{} `json:"users"`
+	Kind            string                 `json:"kind"`
+	BranchMatchKind string                 `json:"branch_match_kind"`
+	BranchType      string                 `json:"branch_type"`
+	FullSlug        string                 `json:"full_slug"`
+	Name            string                 `json:"name"`
+	Value           int                    `json:"value"`
 }
 
 type DiffOptions struct {
